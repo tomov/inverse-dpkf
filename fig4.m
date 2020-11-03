@@ -20,6 +20,8 @@ for idx = 1:length(files)
     filepath
     load(filepath);
 
+    clear pred;
+    clear recon;
     for b = 1:length(dat.block)
 
         Y = dat.opts.squares{b}.S; % stimuli
@@ -33,12 +35,20 @@ for idx = 1:length(files)
         jump = [jump; ones(size(dat.block{b}.c_q, 1), 1) * dat.opts.jump(b)];
         cond = [cond; ones(size(dat.block{b}.c_q, 1), 1) * dat.opts.cond(b)];
 
-        res = dpkf(Y);
+        res = dpks(Y);
 
-        for t = 1:size(Y,1)
+        for t = 1:length(res)
+            pred(t,:) = res(t).priorZ * res(t).x_pred; 
+            recon(t,:) = res(t).pZ * res(t).x_smooth; 
         end
 
-        snahteu
+        figure;
+        hold on;
+        plot(Y(:,2));
+        plot(pred(:,2));
+        plot(recon(:,2));
+        legend({'stimulus', 'prediction', 'reconstruction'});
+        nhtoe
     end
 end
 

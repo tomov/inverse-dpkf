@@ -1,4 +1,4 @@
-function results = dpkf(Y,opts)
+function [results, opts] = dpkf(Y,opts)
     
     % Dirichlet process Kalman filter algorithm. Uses a local maximum a
     % posteriori estimate of the partition.
@@ -66,6 +66,7 @@ function results = dpkf(Y,opts)
         x(k,:) = opts.x0;
     end
     pZ = [1 zeros(1,opts.Kmax-1)];  % mode 1 starts with probability 1
+    khat = 1;
     M = [1 zeros(1,opts.Kmax-1)];
     lik = zeros(1,opts.Kmax);
     
@@ -76,8 +77,13 @@ function results = dpkf(Y,opts)
         yhat = pZ*x;
         err = Y(t,:) - yhat;    % prediction error
         for k = 1:opts.Kmax
+            % TODO momchil transposes flipped? b/c row vectors?
             P{k} = opts.W*P{k}*opts.W' + opts.Q;    % predicted (a priori) estimate covariance
         end
+
+        results(t).x_pred = x;
+        results(t).P_pred = P;
+        results(t).priorZ = pZ;
         
         if all(~isnan(err))
             
