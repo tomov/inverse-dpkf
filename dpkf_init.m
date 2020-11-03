@@ -1,4 +1,4 @@
-function [results, opts] = dpkf(Y,opts)
+function [particle] = dpkf_init(Y,opts)
     
     % Dirichlet process Kalman filter algorithm. Uses a local maximum a
     % posteriori estimate of the partition.
@@ -36,7 +36,7 @@ function [results, opts] = dpkf(Y,opts)
     % Computational Biology.
     
     [T,D] = size(Y);
-  
+
     if ~exist('opts', 'var')
         opts = dpkf_opts(Y);
     else
@@ -52,61 +52,12 @@ function [results, opts] = dpkf(Y,opts)
     khat = 1;
     M = [1 zeros(1,opts.Kmax-1)];
     lik = zeros(1,opts.Kmax);
-    
-    % run DPKF
-    for t = 1:T
-        
-        x = x*opts.W;           % predicted (a priori) estimate
-        yhat = pZ*x;
-        err = Y(t,:) - yhat;    % prediction error
-        for k = 1:opts.Kmax
-            % TODO momchil transposes flipped? b/c row vectors?
-            P{k} = opts.W*P{k}*opts.W' + opts.Q;    % predicted (a priori) estimate covariance
-        end
 
-        results(t).x_pred = x;
-        results(t).P_pred = P;
-        results(t).priorZ = pZ;
-        
-        if all(~isnan(err))
-            
-            % compute posterior over modes
-            if t > 1 && opts.alpha > 0
-                
-                % Chinese restaurant prior
-                prior = M;
-                prior(find(prior==0,1)) = opts.alpha;   % probability of new mode
-                prior(khat) = prior(khat) + opts.sticky;      % make last mode sticky
-                prior = prior./sum(prior);
-                
-                % multivariate Gaussian likelihood
-                for k = 1:opts.Kmax
-                    lik(k) = mvnpdf(Y(t,:),x(k,:),P{k}+opts.R);
-                end
-                
-                % posterior
-                pZ = prior.*lik;
-                pZ = pZ./sum(pZ);
-                
-                % MAP estimate
-                [~,khat] = max(pZ);
-                M(khat) = M(khat) + 1;
-            end
-            
-            % update estimates
-            for k = 1:opts.Kmax
-                S{k} = (pZ(k)^2)*P{k} + opts.R;         % error covariance
-                G{k} = (P{k}*pZ(k))/S{k};               % Kalman gain
-                x(k,:) = x(k,:) + err*G{k};             % updated (a posteriori) estimate
-                P{k} = P{k} - pZ(k)*G{k}*P{k};          % updated (a posteriori) estimate covariance
-            end
-        end
-        
-        % store results
-        results(t).P = P;
-        results(t).x = x;
-        results(t).G = G;
-        results(t).pZ = pZ;
-        results(t).err = err;
-        
-    end
+    particle.P = P;
+    particle.x = x;
+    particle.pZ = pZ;
+    particle.khat = khat;
+    particle.M = M;
+    particle.lik = lik;
+    particle.results = struct;
+   

@@ -36,6 +36,12 @@ for idx = 1:length(files)
     for b = 1:length(dat.block)
 
         Y = dat.opts.squares{b}.S; % stimuli
+        a = dat.block{b}.c; % choices (predictions)
+
+        opts = dpkf_opts(Y);
+        v1 = 50;
+        v2 = 50; % TODO fit
+        opts.V = diag([v1 v2]);
 
         [tr,i] = min(dat.block{b}.t_q); % smaller trial #
 
@@ -48,12 +54,22 @@ for idx = 1:length(files)
         jump = [jump; dat.opts.jump(b)];
         cond = [cond; dat.opts.cond(b)];
 
-        res = dpks(Y);
+        %Y = Y(1:3,:);
 
+        % run it manually
+        %
+        res = dpks(Y, opts);
+
+        clear pred;
+        clear recon;
+        clear lik;
         for t = 1:length(res)
             pred(t,:) = res(t).priorZ * res(t).x_pred; 
             recon(t,:) = res(t).pZ * res(t).x_smooth; 
+            out(t,:) = res(t).priorZ * res(t).x_pred;
+            lik(t) = mvnpdf(a(t,:), res(t).priorZ * res(t).x_pred, opts.V);
         end
+        loglik = sum(log(lik));
 
         %{
         figure;
@@ -66,6 +82,20 @@ for idx = 1:length(files)
 
         dpkf_d_st = [dpkf_d_st; mynorm(recon(tr,:) - first)];
         dpkf_d_en = [dpkf_d_en; mynorm(recon(tr,:) - last)];
+
+        %disp('snthaeu');
+
+        % particle
+        %
+        T = size(Y,1);
+        num_particles = 1;
+        init_fn = @() dpkf_init(Y, opts);
+        choice_fn = @(t, particle) dpkf_choice(t, particle, a, opts);
+        update_fn = @(t, particle) dpkf_update(t, particle, Y, opts);
+        [results, particles] = forward(T, num_particles, init_fn, choice_fn, update_fn);
+        loglik2 = sum(log(results.liks));
+
+        assert(immse(loglik2, loglik) < 1e-9);
     end
 end
 

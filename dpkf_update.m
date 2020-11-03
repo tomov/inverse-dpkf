@@ -1,4 +1,4 @@
-function [results, opts] = dpkf(Y,opts)
+function [particle] = dpkf(t,particle,Y,opts)
     
     % Dirichlet process Kalman filter algorithm. Uses a local maximum a
     % posteriori estimate of the partition.
@@ -36,37 +36,25 @@ function [results, opts] = dpkf(Y,opts)
     % Computational Biology.
     
     [T,D] = size(Y);
-  
+    
     if ~exist('opts', 'var')
         opts = dpkf_opts(Y);
     else
         opts = dpkf_opts(Y, opts);
     end
     
-    % initialization
-    for k = 1:opts.Kmax
-        P{k} = opts.C;
-        x(k,:) = opts.x0;
-    end
-    pZ = [1 zeros(1,opts.Kmax-1)];  % mode 1 starts with probability 1
-    khat = 1;
-    M = [1 zeros(1,opts.Kmax-1)];
-    lik = zeros(1,opts.Kmax);
-    
-    % run DPKF
-    for t = 1:T
         
-        x = x*opts.W;           % predicted (a priori) estimate
-        yhat = pZ*x;
+        x = particle.x*opts.W;           % predicted (a priori) estimate
+        yhat = particle.pZ*x;
         err = Y(t,:) - yhat;    % prediction error
         for k = 1:opts.Kmax
             % TODO momchil transposes flipped? b/c row vectors?
-            P{k} = opts.W*P{k}*opts.W' + opts.Q;    % predicted (a priori) estimate covariance
+            P{k} = opts.W*particle.P{k}*opts.W' + opts.Q;    % predicted (a priori) estimate covariance
         end
 
-        results(t).x_pred = x;
-        results(t).P_pred = P;
-        results(t).priorZ = pZ;
+        particle.results(t).x_pred = x;
+        particle.results(t).P_pred = P;
+        particle.results(t).priorZ = particle.pZ;
         
         if all(~isnan(err))
             
@@ -74,39 +62,39 @@ function [results, opts] = dpkf(Y,opts)
             if t > 1 && opts.alpha > 0
                 
                 % Chinese restaurant prior
-                prior = M;
+                prior = particle.M;
                 prior(find(prior==0,1)) = opts.alpha;   % probability of new mode
-                prior(khat) = prior(khat) + opts.sticky;      % make last mode sticky
+                prior(particle.khat) = prior(particle.khat) + opts.sticky;      % make last mode sticky
                 prior = prior./sum(prior);
                 
                 % multivariate Gaussian likelihood
                 for k = 1:opts.Kmax
-                    lik(k) = mvnpdf(Y(t,:),x(k,:),P{k}+opts.R);
+                    particle.lik(k) = mvnpdf(Y(t,:),x(k,:),P{k}+opts.R);
                 end
                 
                 % posterior
-                pZ = prior.*lik;
-                pZ = pZ./sum(pZ);
+                particle.pZ = prior.*particle.lik;
+                particle.pZ = particle.pZ./sum(particle.pZ);
                 
                 % MAP estimate
-                [~,khat] = max(pZ);
-                M(khat) = M(khat) + 1;
+                [~,particle.khat] = max(particle.pZ);
+                particle.M(particle.khat) = particle.M(particle.khat) + 1;
             end
             
             % update estimates
             for k = 1:opts.Kmax
-                S{k} = (pZ(k)^2)*P{k} + opts.R;         % error covariance
-                G{k} = (P{k}*pZ(k))/S{k};               % Kalman gain
-                x(k,:) = x(k,:) + err*G{k};             % updated (a posteriori) estimate
-                P{k} = P{k} - pZ(k)*G{k}*P{k};          % updated (a posteriori) estimate covariance
+                S{k} = (particle.pZ(k)^2)*P{k} + opts.R;         % error covariance
+                G{k} = (P{k}*particle.pZ(k))/S{k};               % Kalman gain
+                particle.x(k,:) = x(k,:) + err*G{k};             % updated (a posteriori) estimate
+                particle.P{k} = P{k} - particle.pZ(k)*G{k}*P{k};          % updated (a posteriori) estimate covariance
             end
         end
         
         % store results
-        results(t).P = P;
-        results(t).x = x;
-        results(t).G = G;
-        results(t).pZ = pZ;
-        results(t).err = err;
-        
-    end
+        particle.results(t).P = particle.P;
+        particle.results(t).x = particle.x;
+        particle.results(t).G = G;
+        particle.results(t).pZ = particle.pZ;
+        particle.results(t).err = err;
+       
+
