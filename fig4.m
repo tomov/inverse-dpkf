@@ -22,14 +22,23 @@ for idx = 1:length(files)
 
     for b = 1:length(dat.block)
 
-        first = dat.opts.squares{b}.S(1,:);
-        last = dat.opts.squares{b}.S(end,:);
+        Y = dat.opts.squares{b}.S; % stimuli
+
+        first = Y(1,:);
+        last = Y(end,:);
         d_st = [d_st; mynorm(dat.block{b}.c_q - first)];
         d_en = [d_en; mynorm(dat.block{b}.c_q - last)];
         B = [B; ones(size(dat.block{b}.c_q, 1), 1) * b];
         S = [S; ones(size(dat.block{b}.c_q, 1), 1) * dat.sub];
         jump = [jump; ones(size(dat.block{b}.c_q, 1), 1) * dat.opts.jump(b)];
         cond = [cond; ones(size(dat.block{b}.c_q, 1), 1) * dat.opts.cond(b)];
+
+        res = dpkf(Y);
+
+        for t = 1:size(Y,1)
+        end
+
+        snahteu
     end
 end
 
