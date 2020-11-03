@@ -1,4 +1,4 @@
-function [results, particles] = forward(N, num_particles, init_fn, choice_fn, update_fn)
+function [results, particles] = forward(N, num_particles, init_fn, choice_fn, update_fn, do_resample)
 
     choices = [];
     for i=1:num_particles
@@ -8,7 +8,9 @@ function [results, particles] = forward(N, num_particles, init_fn, choice_fn, up
     liks(1) = mean(w);
     choices = [choices; mean(c,1)];
 
-    particles = resample_particles(particles, w);
+    if do_resample
+        particles = resample_particles(particles, w);
+    end
 
     for n=2:N
         for i=1:num_particles
@@ -18,7 +20,9 @@ function [results, particles] = forward(N, num_particles, init_fn, choice_fn, up
         liks(n) = mean(w);
         choices = [choices; mean(c,1)];
     
-        particles = resample_particles(particles, w);
+        if do_resample
+            particles = resample_particles(particles, w);
+        end
     end
     
     for i=1:num_particles
@@ -28,4 +32,4 @@ function [results, particles] = forward(N, num_particles, init_fn, choice_fn, up
     results.choices = choices;
     results.liks = liks;
 
-    save forward.mat
+    %save forward.mat

@@ -22,6 +22,9 @@ cond = [];
 
 mynorm = @(x) sqrt(sum(x.^2, 2));
 
+lmes = [];
+models = {'MAP', 'ideal', 'sample'};
+
 for idx = 1:length(files)
     if ~endsWith(files(idx).name, 'mat')
         continue;
@@ -30,6 +33,8 @@ for idx = 1:length(files)
     filepath = fullfile(dirname, files(idx).name);
     filepath
     load(filepath);
+
+    lme = [0 0 0];
 
     clear pred;
     clear recon;
@@ -85,18 +90,44 @@ for idx = 1:length(files)
 
         %disp('snthaeu');
 
-        % particle
+        % MAP particle
         %
         T = size(Y,1);
         num_particles = 1;
         init_fn = @() dpkf_init(Y, opts);
         choice_fn = @(t, particle) dpkf_choice(t, particle, a, opts);
-        update_fn = @(t, particle) dpkf_update(t, particle, Y, opts);
-        [results, particles] = forward(T, num_particles, init_fn, choice_fn, update_fn);
-        loglik2 = sum(log(results.liks));
+        update_fn = @(t, particle) dpkf_MAP_update(t, particle, Y, opts);
+        [results1, particles1] = forward(T, num_particles, init_fn, choice_fn, update_fn, true);
+        loglik1 = sum(log(results1.liks));
 
-        assert(immse(loglik2, loglik) < 1e-9);
+        assert(immse(loglik1, loglik) < 1e-9);
+
+        lme(1) = lme(1) + loglik1;
+
+        % ideal 
+        %
+        num_particles = 1000;
+        init_fn = @() dpkf_init(Y, opts);
+        choice_fn = @(t, particle) dpkf_choice(t, particle, a, opts);
+        update_fn = @(t, particle) dpkf_sample_update(t, particle, Y, opts);
+        [results2, particles2] = forward(T, num_particles, init_fn, choice_fn, update_fn, false);
+        loglik2 = sum(log(results2.liks));
+
+        lme(2) = lme(2) + loglik2;
+
+        % sample
+        %
+        num_particles = 1000;
+        init_fn = @() dpkf_init(Y, opts);
+        choice_fn = @(t, particle) dpkf_choice(t, particle, a, opts);
+        update_fn = @(t, particle) dpkf_sample_update(t, particle, Y, opts);
+        [results3, particles3] = forward(T, num_particles, init_fn, choice_fn, update_fn, true);
+        loglik3 = sum(log(results3.liks));
+
+        lme(3) = lme(3) + loglik3;
     end
+
+    lmes = [lmes; lme];
 end
 
 T = table(S, B, jump, cond, d_st, d_en, dpkf_d_st, dpkf_d_en);
@@ -120,3 +151,10 @@ xticklabels({'start', 'end'});
 legend({'gradual', 'jump'});
 title('DP-KF');
 
+
+[alpha,exp_r,xp,pxp,bor] = bms(lmes);
+
+pxp
+bor
+
+save('fig4.mat');
