@@ -1,3 +1,12 @@
+% c - 2D prediction on learning trial
+% rt - RT on learning trial
+% points - how many points subject was rewarded
+% c_q - 2D reconstruction on query trial
+% rt_q - RT on query trial
+% s_q - objective stimulus shown on queried learning trial
+% t_q - indices of queried learning trials
+% The stimuli shown on each block are in opts.squares.
+
 
 dirname = 'data1';
 
@@ -6,6 +15,8 @@ S = [];
 B = [];
 d_st = [];
 d_en = [];
+dpkf_d_st = [];
+dpkf_d_en = [];
 jump = [];
 cond = [];
 
@@ -26,14 +37,16 @@ for idx = 1:length(files)
 
         Y = dat.opts.squares{b}.S; % stimuli
 
+        [tr,i] = min(dat.block{b}.t_q); % smaller trial #
+
         first = Y(1,:);
         last = Y(end,:);
-        d_st = [d_st; mynorm(dat.block{b}.c_q - first)];
-        d_en = [d_en; mynorm(dat.block{b}.c_q - last)];
-        B = [B; ones(size(dat.block{b}.c_q, 1), 1) * b];
-        S = [S; ones(size(dat.block{b}.c_q, 1), 1) * dat.sub];
-        jump = [jump; ones(size(dat.block{b}.c_q, 1), 1) * dat.opts.jump(b)];
-        cond = [cond; ones(size(dat.block{b}.c_q, 1), 1) * dat.opts.cond(b)];
+        d_st = [d_st; mynorm(dat.block{b}.c_q(i,:) - first)];
+        d_en = [d_en; mynorm(dat.block{b}.c_q(i,:) - last)];
+        B = [B; b];
+        S = [S; dat.sub];
+        jump = [jump; dat.opts.jump(b)];
+        cond = [cond; dat.opts.cond(b)];
 
         res = dpks(Y);
 
@@ -42,20 +55,38 @@ for idx = 1:length(files)
             recon(t,:) = res(t).pZ * res(t).x_smooth; 
         end
 
+        %{
         figure;
         hold on;
         plot(Y(:,2));
         plot(pred(:,2));
         plot(recon(:,2));
         legend({'stimulus', 'prediction', 'reconstruction'});
-        nhtoe
+        %}
+
+        dpkf_d_st = [dpkf_d_st; mynorm(recon(tr,:) - first)];
+        dpkf_d_en = [dpkf_d_en; mynorm(recon(tr,:) - last)];
     end
 end
 
-T = table(S, B, jump, cond, d_st, d_en);
+T = table(S, B, jump, cond, d_st, d_en, dpkf_d_st, dpkf_d_en);
 
 ms = [mean(T.d_st(T.jump == 1)) mean(T.d_st(T.jump == 0));
       mean(T.d_en(T.jump == 1)) mean(T.d_en(T.jump == 0))];
 
+dpkf_ms = [mean(T.dpkf_d_st(T.jump == 1)) mean(T.dpkf_d_st(T.jump == 0));
+           mean(T.dpkf_d_en(T.jump == 1)) mean(T.dpkf_d_en(T.jump == 0))];
+
 figure;
+subplot(2,1,1);
 h = bar(ms);
+xticklabels({'start', 'end'});
+legend({'gradual', 'jump'});
+title('humans');
+
+subplot(2,1,2);
+h = bar(dpkf_ms);
+xticklabels({'start', 'end'});
+legend({'gradual', 'jump'});
+title('DP-KF');
+
