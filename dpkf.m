@@ -93,6 +93,8 @@ function [results, opts] = dpkf(Y,opts)
                     pZ(:) = 0;
                     pZ(knew) = 1;
                     x(knew,:) = Y(t,:);
+                    err = zeros(size(x(knew,:))); % hack
+                    err
                 end
                 
                 % MAP estimate

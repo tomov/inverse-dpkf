@@ -63,7 +63,8 @@ function [particle] = dpkf(t,particle,Y,opts)
                 
                 % Chinese restaurant prior
                 prior = particle.M;
-                prior(find(prior==0,1)) = opts.alpha;   % probability of new mode
+                knew = find(prior==0,1);
+                prior(knew) = opts.alpha;   % probability of new mode
                 prior(particle.khat) = prior(particle.khat) + opts.sticky;      % make last mode sticky
                 prior = prior./sum(prior);
                 
@@ -76,7 +77,12 @@ function [particle] = dpkf(t,particle,Y,opts)
                 particle.pZ = prior.*particle.lik;
                 particle.pZ = particle.pZ./sum(particle.pZ);
                 if isnan(particle.pZ(1)) % TODO momchil ask Sam -- liks = 0; variance too tight
-                    particle.pZ = prior;
+                    % if we get "impossible" observation, set new mode to it
+                    particle.pZ(:) = 0;
+                    particle.pZ(knew) = 1;
+                    x(knew,:) = Y(t,:);
+                    err = zeros(size(x(knew,:))); % hack
+                    err
                 end
                 
                 % MAP estimate
