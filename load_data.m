@@ -12,7 +12,6 @@ function data = load_data()
         end
 
         filepath = fullfile(dirname, files(idx).name);
-        filepath
         load(filepath);
 
         s = s + 1;

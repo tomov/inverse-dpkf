@@ -1,6 +1,11 @@
-function [results, bms_results, data] = fit_models()
+%function [results, bms_results, data] = fit_models()
+
+    clear all;
 
     models = {'stationary_kf', 'kf', 'stationary_dpkf', 'dpkf'};
+    %models = models(1);
+
+    data = load_data();
 
     for m = 1:length(models)
 
@@ -26,6 +31,8 @@ function [results, bms_results, data] = fit_models()
             case 'stationary_dpkf'
                 param(2) = struct('name','q','logpdf',@(x) 0,'lb', 0,'ub', 0);
 
+            case 'dpkf'
+
             otherwise
                 assert(false)
         end
@@ -33,7 +40,13 @@ function [results, bms_results, data] = fit_models()
         %fun = str2func(likfuns{m});
         fun = @dpkf_loglik;
         results(m) = mfit_optimize(fun,param,data);
+        results(m).model_name = models{m};
         clear param
     end
 
+    save('fit_models.mat');
+
     bms_results = mfit_bms(results, 1);  % use BIC TODO try 0
+
+    save('fit_models.mat');
+
