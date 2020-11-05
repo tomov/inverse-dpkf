@@ -75,6 +75,9 @@ function [particle] = dpkf(t,particle,Y,opts)
                 % posterior
                 particle.pZ = prior.*particle.lik;
                 particle.pZ = particle.pZ./sum(particle.pZ);
+                if isnan(particle.pZ(1)) % TODO momchil ask Sam -- liks = 0; variance too tight
+                    particle.pZ = prior;
+                end
                 
                 % MAP estimate
                 [~,particle.khat] = max(particle.pZ);

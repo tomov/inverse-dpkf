@@ -8,38 +8,49 @@
 % The stimuli shown on each block are in opts.squares.
 
 
-%{
 data = load_data;
 
 load('fit_models.mat');
 
-T = data2table(data, results(4).x);
-%}
-
-[human_sems human_ms X] = wse_helper(data, T, 'human_d_st', 'human_d_en');
-[model_sems model_ms X] = wse_helper(data, T, 'model_d_st', 'model_d_en');
-
 figure;
-subplot(2,1,1);
-h = bar([human_ms(1:2); human_ms(3:4)]);
-xs = sort([h(1).XData + h(1).XOffset, ...
-           h(2).XData + h(2).XOffset]);
-hold on;
-errorbar(xs, human_ms, human_sems, '.', 'MarkerSize', 1, 'MarkerFaceColor', [0 0 0], 'LineWidth', 1, 'Color', [0 0 0], 'AlignVertexCenters', 'off');
-xticklabels({'start', 'end'});
-legend({'gradual', 'jump'});
-title('humans');
 
-subplot(2,1,2);
-h = bar([model_ms(1:2); model_ms(3:4)]);
-xs = sort([h(1).XData + h(1).XOffset, ...
-           h(2).XData + h(2).XOffset]);
-hold on;
-errorbar(xs, model_ms, model_sems, '.', 'MarkerSize', 1, 'MarkerFaceColor', [0 0 0], 'LineWidth', 1, 'Color', [0 0 0], 'AlignVertexCenters', 'off');
-xticklabels({'start', 'end'});
-legend({'gradual', 'jump'});
-title('DP-KF');
+% r q v alpha sticky w 
+default_params = [1 0.01 50 0.1 0 1];
+params = {[1 0 50 0 0 1], 
+          [1 0.01 50 0 0 1],
+          [1 0 50 0.1 0 1],
+          [1 0.01 50 0.1 0 1]};
 
+for m = 1:length(results)
+
+    T = data2table(data, params{m});
+
+    [human_sems human_ms X] = wse_helper(data, T, 'human_d_st', 'human_d_en');
+
+    [model_sems model_ms X] = wse_helper(data, T, 'model_d_st', 'model_d_en');
+
+    if m == 1
+        subplot(2,length(results),1);
+        h = bar([human_ms(1:2); human_ms(3:4)]);
+        xs = sort([h(1).XData + h(1).XOffset, ...
+                   h(2).XData + h(2).XOffset]);
+        hold on;
+        errorbar(xs, human_ms, human_sems, '.', 'MarkerSize', 1, 'MarkerFaceColor', [0 0 0], 'LineWidth', 1, 'Color', [0 0 0], 'AlignVertexCenters', 'off');
+        xticklabels({'start', 'end'});
+        legend({'gradual', 'jump'});
+        title('humans');
+    end
+
+    subplot(2,length(results), m + length(results));
+    h = bar([model_ms(1:2); model_ms(3:4)]);
+    xs = sort([h(1).XData + h(1).XOffset, ...
+               h(2).XData + h(2).XOffset]);
+    hold on;
+    errorbar(xs, model_ms, model_sems, '.', 'MarkerSize', 1, 'MarkerFaceColor', [0 0 0], 'LineWidth', 1, 'Color', [0 0 0], 'AlignVertexCenters', 'off');
+    xticklabels({'start', 'end'});
+    title(models{m}, 'interprete', 'none');
+
+end
 
 save('fig4.mat');
 

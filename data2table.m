@@ -1,5 +1,8 @@
 function T = data2table(data, param)
 
+if size(param,1) == 1
+    param = repmat(param, length(data), 1);
+end
     
 S = [];
 B = [];

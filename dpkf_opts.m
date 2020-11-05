@@ -11,7 +11,7 @@ function opts = dpkf_opts(Y, opts)
     def_opts.alpha = 0.1;
     def_opts.sticky = 0;
     def_opts.x0 = zeros(1,D);
-    def_opts.Kmax = 10;
+    def_opts.Kmax = 20;
     F = fieldnames(def_opts);
     if nargin < 2 || isempty(opts)
         opts = def_opts;

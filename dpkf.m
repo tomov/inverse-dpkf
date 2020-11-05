@@ -75,10 +75,11 @@ function [results, opts] = dpkf(Y,opts)
                 
                 % Chinese restaurant prior
                 prior = M;
-                prior(find(prior==0,1)) = opts.alpha;   % probability of new mode
+                knew = find(prior==0,1);
+                prior(knew) = opts.alpha;   % probability of new mode
                 prior(khat) = prior(khat) + opts.sticky;      % make last mode sticky
                 prior = prior./sum(prior);
-                
+
                 % multivariate Gaussian likelihood
                 for k = 1:opts.Kmax
                     lik(k) = mvnpdf(Y(t,:),x(k,:),P{k}+opts.R);
@@ -87,6 +88,12 @@ function [results, opts] = dpkf(Y,opts)
                 % posterior
                 pZ = prior.*lik;
                 pZ = pZ./sum(pZ);
+                if isnan(pZ(1)) % TODO momchil ask Sam -- liks = 0; variance too tight
+                    % if we get "impossible" observation, set new mode to it
+                    pZ(:) = 0;
+                    pZ(knew) = 1;
+                    x(knew,:) = Y(t,:);
+                end
                 
                 % MAP estimate
                 [~,khat] = max(pZ);
