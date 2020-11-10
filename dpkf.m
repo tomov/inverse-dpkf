@@ -67,6 +67,7 @@ function [results, opts] = dpkf(Y,opts)
         results(t).x_pred = x;
         results(t).P_pred = P;
         results(t).priorZ = pZ;
+        bad = false;
         
         if all(~isnan(err))
             
@@ -84,7 +85,7 @@ function [results, opts] = dpkf(Y,opts)
                 for k = 1:opts.Kmax
                     lik(k) = mvnpdf(Y(t,:),x(k,:),P{k}+opts.R);
                 end
-                
+
                 % posterior
                 pZ = prior.*lik;
                 pZ = pZ./sum(pZ);
@@ -94,20 +95,22 @@ function [results, opts] = dpkf(Y,opts)
                     pZ(knew) = 1;
                     x(knew,:) = Y(t,:);
                     err = zeros(size(x(knew,:))); % hack
-                    err
+                    bad = true;
                 end
                 
                 % MAP estimate
                 [~,khat] = max(pZ);
                 M(khat) = M(khat) + 1;
             end
-            
-            % update estimates
-            for k = 1:opts.Kmax
-                S{k} = (pZ(k)^2)*P{k} + opts.R;         % error covariance
-                G{k} = (P{k}*pZ(k))/S{k};               % Kalman gain
-                x(k,:) = x(k,:) + err*G{k};             % updated (a posteriori) estimate
-                P{k} = P{k} - pZ(k)*G{k}*P{k};          % updated (a posteriori) estimate covariance
+           
+            if ~bad
+                % update estimates
+                for k = 1:opts.Kmax
+                    S{k} = (pZ(k)^2)*P{k} + opts.R;         % error covariance
+                    G{k} = (P{k}*pZ(k))/S{k};               % Kalman gain
+                    x(k,:) = x(k,:) + err*G{k};             % updated (a posteriori) estimate
+                    P{k} = P{k} - pZ(k)*G{k}*P{k};          % updated (a posteriori) estimate covariance
+                end
             end
         end
         

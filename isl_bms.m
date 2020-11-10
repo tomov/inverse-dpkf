@@ -12,6 +12,12 @@
 
 data = load_data;
 
+load('fit_models_4_a.mat');
+filename = 'isl_bms_4_a.mat'
+
+param = results(1).x;
+
+
 S = [];
 B = [];
 d_st = [];
@@ -42,7 +48,8 @@ for s = 1:length(data)
         Y = data(s).opts.squares{b}.S; % stimuli
         a = data(s).block{b}.c; % choices (predictions)
 
-        opts = dpkf_opts(Y);
+        %opts = dpkf_opts(Y);
+        opts = set_opts(Y, param(s,:));
 
         [tr,i] = min(data(s).block{b}.t_q); % smaller trial #
 
@@ -107,8 +114,8 @@ for s = 1:length(data)
         lme(3) = lme(3) + loglik3;
     end
 
-    loglik = dpkf_loglik([1 0.01 50 0.1 0 1], data(s));
-    assert(immse(loglik, ll) < 1e-9);
+    %loglik = dpkf_loglik([1 0.01 50 0.1 0 1], data(s));
+    %assert(immse(loglik, ll) < 1e-9);
 
 
     lmes = [lmes; lme];
@@ -121,4 +128,4 @@ end
 pxp
 bor
 
-save('fig4.mat');
+save(filename);

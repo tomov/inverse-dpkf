@@ -26,6 +26,7 @@ for s = 1:length(data)
         a = data(s).block{b}.c; % choices (predictions)
 
         opts = set_opts(Y, param(s,:));
+        %opts = dpkf_opts(Y);
 
         [tr,i] = min(data(s).block{b}.t_q); % smaller trial #
 
@@ -46,14 +47,38 @@ for s = 1:length(data)
         clear pred;
         clear recon;
         clear lik;
+        clear k;
         for t = 1:length(res)
             pred(t,:) = res(t).priorZ * res(t).x_pred; 
             recon(t,:) = res(t).pZ * res(t).x_smooth; 
+            [~, k(t,:)] = max(res(t).pZ);
         %    out(t,:) = res(t).priorZ * res(t).x_pred;
         %    lik(t) = mvnpdf(a(t,:), res(t).priorZ * res(t).x_pred, opts.V);
         end
         %loglik = sum(log(lik));
         %ll = ll + loglik;
+
+        %{
+        figure;
+
+        subplot(2,1,1);
+        hold on;
+        plot(Y(:,1));
+        plot(pred(:,1));
+        plot(recon(:,1));
+        plot(k * 10);
+
+        subplot(2,1,2);
+        hold on;
+        plot(Y(:,2));
+        plot(pred(:,2));
+        plot(recon(:,2));
+        plot(k * 10);
+
+        legend({'stimulus', 'prediction', 'reconstruction', 'mode'});
+
+        nsathoeu
+        %}
 
         model_d_st = [model_d_st; mynorm(recon(tr,:) - first)];
         model_d_en = [model_d_en; mynorm(recon(tr,:) - last)];

@@ -55,7 +55,8 @@ function [particle] = dpkf(t,particle,Y,opts)
         particle.results(t).x_pred = x;
         particle.results(t).P_pred = P;
         particle.results(t).priorZ = particle.pZ;
-        
+
+        bad = false;
         if all(~isnan(err))
             
             % compute posterior over modes
@@ -83,6 +84,7 @@ function [particle] = dpkf(t,particle,Y,opts)
                     x(knew,:) = Y(t,:);
                     err = zeros(size(x(knew,:))); % hack
                     err
+                    bad = true;
                 end
                 
                 % MAP estimate
@@ -94,11 +96,13 @@ function [particle] = dpkf(t,particle,Y,opts)
             end
             
             % update estimates
-            for k = 1:opts.Kmax
-                S{k} = (particle.pZ(k)^2)*P{k} + opts.R;         % error covariance
-                G{k} = (P{k}*particle.pZ(k))/S{k};               % Kalman gain
-                particle.x(k,:) = x(k,:) + err*G{k};             % updated (a posteriori) estimate
-                particle.P{k} = P{k} - particle.pZ(k)*G{k}*P{k};          % updated (a posteriori) estimate covariance
+            if ~bad
+                for k = 1:opts.Kmax
+                    S{k} = (particle.pZ(k)^2)*P{k} + opts.R;         % error covariance
+                    G{k} = (P{k}*particle.pZ(k))/S{k};               % Kalman gain
+                    particle.x(k,:) = x(k,:) + err*G{k};             % updated (a posteriori) estimate
+                    particle.P{k} = P{k} - particle.pZ(k)*G{k}*P{k};          % updated (a posteriori) estimate covariance
+                end
             end
         end
         

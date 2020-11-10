@@ -9,7 +9,8 @@ function loglik = dpkf_loglik(x, data)
         Y = data.opts.squares{b}.S; % stimuli
         a = data.block{b}.c; % choices (predictions)
 
-        opts = dpkf_opts(Y);
+        %opts = dpkf_opts(Y);
+        opts = set_opts(Y, x);
 
         res = dpks(Y, opts);
 
@@ -20,3 +21,4 @@ function loglik = dpkf_loglik(x, data)
         loglik = loglik + sum(log(lik));
     end
 
+    loglik

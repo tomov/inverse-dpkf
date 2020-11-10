@@ -10,7 +10,7 @@
 
 data = load_data;
 
-load('fit_models.mat');
+%load('fit_models.mat');
 
 figure;
 
@@ -21,9 +21,13 @@ params = {[1 0 50 0 0 1],
           [1 0 50 0.1 0 1],
           [1 0.01 50 0.1 0 1]};
 
+params = [1 0.01 10 0.1 0 1];
+
 for m = 1:length(results)
 
-    T = data2table(data, params{m});
+    %T = data2table(data, params);
+    %T = data2table(data, params{4});
+    T = data2table(data, results(1).x);
 
     [human_sems human_ms X] = wse_helper(data, T, 'human_d_st', 'human_d_en');
 
